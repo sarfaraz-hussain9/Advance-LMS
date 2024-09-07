@@ -17,6 +17,7 @@ export default {
       btn2: "#2e4437",
       btn3: "#152c1e",
       white: "#fff",
+      transparent: "transparent",
     },
     extend: {},
   },

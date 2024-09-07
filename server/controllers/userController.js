@@ -57,13 +57,14 @@ export const login = CAE(async (req, res, next) => {
   const user = await User.findOne({ email });
 
   // Check if the user exists
-  if (!user) return next(new ErrorHandler("User does not exist", 401));
+  if (!user) return next(new ErrorHandler("Email or Password is Wrong.", 401));
 
   // Compare the entered password with the hashed password in the database
   const isMatched = await bcrypt.compare(password, user.password);
 
   // If the password doesn't match, return an error
-  if (!isMatched) return next(new ErrorHandler("Incorrect credentials", 401));
+  if (!isMatched)
+    return next(new ErrorHandler("Email or Password is Wrong.", 401));
 
   // Convert user to a plain object and delete the password field
   const userObj = user.toObject();
@@ -134,28 +135,50 @@ export const updateProfile = CAE(async (req, res, next) => {
 
 //todo
 export const updateProfilePicture = CAE(async (req, res, next) => {
-  const user = await User.findById(req.user._id);
+  try {
+    // Ensure file is provided
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
+    }
 
-  console.log(user);
+    const user = await User.findById(req.user._id);
 
-  const file = req.file;
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
 
-  const fileUri = getDataUri(file);
+    const file = req.file;
+    const fileUri = getDataUri(file);
 
-  const myCloud = await cloudinary.v2.uploader.upload(fileUri.content);
+    // Upload to Cloudinary
+    const myCloud = await cloudinary.v2.uploader.upload(fileUri.content, {
+      folder: "EdMachine",
+    });
 
-  await cloudinary.v2.uploader.destroy(user.avatar.public_id);
+    // Remove old avatar from Cloudinary if not temporary
+    if (user?.avatar?.public_id !== "temp") {
+      await cloudinary.v2.uploader.destroy(user.avatar.public_id);
+    }
 
-  user.avatar = {
-    public_id: myCloud.public_id,
-    url: myCloud.secure_url,
-  };
+    // Update user profile with new avatar
+    user.avatar = {
+      public_id: myCloud.public_id,
+      url: myCloud.secure_url,
+    };
 
-  await user.save();
+    await user.save();
 
-  res
-    .status(200)
-    .json({ success: true, message: "profile picture is updated" });
+    res.status(200).json({
+      success: true,
+      message: "Profile picture is updated",
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 export const forgetPassword = CAE(async (req, res, next) => {

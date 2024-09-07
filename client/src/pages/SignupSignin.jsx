@@ -15,6 +15,7 @@ const SignupSignin = () => {
   const { userInfo } = useSelector((state) => state.auth);
 
   const [showPasswordSignup, setShowPasswordSignup] = useState(false);
+  const [showPasswordLogin, setShowPasswordLogin] = useState(false);
   const [signin, setSignin] = useState(true);
 
   const [name, setName] = useState("");
@@ -90,12 +91,11 @@ const SignupSignin = () => {
   if (loginError) {
   }
 
-  const handleToggle = () => setShowPasswordSignup(!showPasswordSignup);
   return (
     <div className="mt-[64px] min-h-[calc(100vh-64px)] w-screen bg-background flex items-center justify-center ">
       <div className="w-full md:max-w-md p-4 bg-btn1 shadow-md sm:rounded-lg h-[calc(100vh-64px)] md:h-[33rem] overflow-hidden">
         <h1 className="text-3xl font-bold mb-4 text-center overflow-hidden">
-          WELCOME TO <span className="text-text">ED MACHINE</span>
+          WELCOME TO ED MACHINE
         </h1>
         <div className="w-full overflow-hidden flex justify-between text-2xl relative px-4">
           <div
@@ -137,11 +137,11 @@ const SignupSignin = () => {
                 <input
                   type="text"
                   placeholder="Name"
-                  className="rounded pl-6 pr-2 py-1 focus:outline-none text-background w-full"
+                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
-                <div className="text-accent absolute top-2 left-1">
+                <div className="text-background absolute top-[0.6rem] left-2">
                   <FaUser />
                 </div>
               </div>
@@ -152,11 +152,11 @@ const SignupSignin = () => {
                 <input
                   type="email"
                   placeholder="Email"
-                  className="rounded pl-6 pr-2 py-1 focus:outline-none text-background w-full"
+                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-                <div className="text-accent absolute top-2 left-1">
+                <div className="text-background absolute top-[0.6rem] left-2">
                   <MdEmail />
                 </div>
               </div>
@@ -167,17 +167,17 @@ const SignupSignin = () => {
                 <input
                   type={showPasswordSignup ? "text" : "password"}
                   placeholder="Password"
-                  className="rounded pl-6 pr-2 py-1 focus:outline-none text-background w-full"
+                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={5}
                 />
-                <div className="text-accent absolute top-2 left-1">
-                  <IoIosLock />
+                <div className="text-background text-xl absolute top-2 left-2">
+                  <IoIosLock className="text-xl" />
                 </div>
                 <div
-                  className="text-accent absolute top-1 right-1 text-2xl cursor-pointer"
-                  onClick={handleToggle}
+                  className="text-background absolute top-1 right-2 text-2xl cursor-pointer"
+                  onClick={() => setShowPasswordSignup(!showPasswordSignup)}
                 >
                   {showPasswordSignup ? <FaEyeSlash /> : <MdRemoveRedEye />}
                 </div>
@@ -189,13 +189,13 @@ const SignupSignin = () => {
                 <input
                   type="password"
                   placeholder="Confirm Password"
-                  className="rounded pl-6 pr-2 py-1 focus:outline-none text-background w-full"
+                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   minLength={5}
                 />
-                <div className="text-accent absolute top-2 left-1">
-                  <IoIosLock />
+                <div className="text-background text-xl absolute top-2 left-2">
+                  <IoIosLock className="text-xl" />
                 </div>
               </div>
             </label>
@@ -221,11 +221,11 @@ const SignupSignin = () => {
                 <input
                   type="email"
                   placeholder="Email"
-                  className="rounded pl-6 pr-2 py-1 focus:outline-none text-background w-full"
+                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                 />
-                <div className="text-accent absolute top-2 left-1">
+                <div className="text-background absolute top-[0.6rem] left-2">
                   <MdEmail />
                 </div>
               </div>
@@ -234,21 +234,21 @@ const SignupSignin = () => {
               <span className="font-semibold">Password</span>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showPasswordLogin ? "text" : "password"}
                   placeholder="Password"
-                  className="rounded pl-6 pr-2 py-1 focus:outline-none text-background w-full"
+                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   minLength={5}
                 />
-                <div className="text-accent absolute top-2 left-1">
-                  <IoIosLock />
+                <div className="text-background text-xl absolute top-2 left-2">
+                  <IoIosLock className="text-xl" />
                 </div>
                 <div
-                  className="text-accent absolute top-1 right-1 text-2xl cursor-pointer"
-                  onClick={handleToggle}
+                  className="text-background absolute top-1 right-2 text-2xl cursor-pointer"
+                  onClick={() => setShowPasswordLogin(!showPasswordLogin)}
                 >
-                  {showPasswordSignup ? <FaEyeSlash /> : <MdRemoveRedEye />}
+                  {showPasswordLogin ? <FaEyeSlash /> : <MdRemoveRedEye />}
                 </div>
               </div>
             </label>

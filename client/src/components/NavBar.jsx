@@ -30,6 +30,7 @@ const NavBar = () => {
       dispatch(logout());
       console.log("dispatch workng");
       toast.success("User logged out successfully");
+      setProfileDropDown(false);
       navigate("/signin");
     } catch (err) {
       toast.error(err.message || "Logout failed");
