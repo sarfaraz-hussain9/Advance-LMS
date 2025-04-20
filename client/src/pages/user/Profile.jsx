@@ -13,10 +13,13 @@ import { IoIosLock } from "react-icons/io";
 import { MdRemoveRedEye } from "react-icons/md";
 import { FaEyeSlash } from "react-icons/fa";
 
+import dpDefault from "../../assets/Images/dp.jpg";
+
 const Profile = () => {
   const fileInputRef = useRef(null);
   const nameInputRef = useRef(null); // Ref for the name input
   const [email, setEmail] = useState("");
+  const [admin, setAdmin] = useState(false);
   const [name, setName] = useState("");
   const [profileImg, setProfileImg] = useState("");
   const [subscriptionId, setSubscriptionId] = useState("");
@@ -64,6 +67,9 @@ const Profile = () => {
       setSubscriptionId(user.subscription?.id);
       setSubscriptionStatus(user.subscription?.status);
       setPlaylist(user.playlist);
+      if (user.role === "admin") {
+        setAdmin(true);
+      }
     }
   }, [profileInfo]);
 
@@ -148,237 +154,219 @@ const Profile = () => {
   };
 
   return (
-    <div className="mt-[64px] min-h-[calc(100vh-64px)] w-screen bg-box4 ">
-      <div className="container mx-auto px-2 bg-primery mt-3 lg:rounded-xl p-3 flex flex-col lg:flex-row gap-3 text-background">
-        <div className="w-full lg:w-1/3 lg:h-[80vh] flex flex-col items-center gap-3">
-          <h1 className="text-4xl uppercase font-bold overflow-hidden">
-            Profile
-          </h1>
-          {/* profile image */}
-          <div className="mt-3 relative">
-            <div className="w-36 h-36 rounded-full overflow-hidden relative">
-              {avatar ? (
-                <img
-                  src={URL.createObjectURL(avatar)}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <img
-                  src={profileImg === "temp" ? "/dp.jpg" : profileImg}
-                  alt="DP"
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </div>
-            <div className="text-background absolute bottom-0 right-3">
-              <FaEdit
-                className="text-3xl cursor-pointer"
-                onClick={handleAvatar}
-              />
-              <input
-                type="file"
-                name="file"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleAvatarUpload}
-              />
-            </div>
-          </div>
+    <div className="my-2 min-h-[calc(100vh-64px)] w-screen">
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 flex flex-col lg:flex-row gap-6">
+          {/* Left Section - Profile Details */}
+          <div className="w-full lg:w-1/3 flex flex-col items-center gap-6">
+            <h1 className="text-3xl font-bold text-[#007BFF]">Profile</h1>
 
-          {changePasswordToggle ? (
-            // change password
-            <div className="w-full">
-              <form onSubmit={handleChangePassword} className="w-full">
-                <label htmlFor="password" className="flex flex-col">
-                  <span className="font-semibold">Old Password</span>
-                  <div className="relative">
-                    <input
-                      type={showOldPassword ? "text" : "password"}
-                      placeholder="Old Password"
-                      className="rounded pl-6 pr-3 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                      minLength={5}
-                      value={oldPassword}
-                      onChange={(e) => setOldPassword(e.target.value)}
-                    />
-                    <div className="text-background text-xl absolute top-2 left-1">
-                      <IoIosLock />
-                    </div>
-                    <div
-                      className="text-background absolute top-1 right-1 text-2xl cursor-pointer"
-                      onClick={() => setShowOldPassword(!showOldPassword)}
-                    >
-                      {showOldPassword ? <FaEyeSlash /> : <MdRemoveRedEye />}
-                    </div>
+            {/* Profile Image */}
+            <div className="relative">
+              <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-[#007BFF]">
+                {avatar ? (
+                  <img
+                    src={URL.createObjectURL(avatar)}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img
+                    src={profileImg === "temp" ? "/dp.jpg" : profileImg}
+                    alt="DP"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
+              <div className="absolute bottom-0 right-0 bg-[#007BFF] p-2 rounded-full cursor-pointer hover:bg-[#0056b3] transition-colors">
+                <FaEdit className="text-white text-xl" onClick={handleAvatar} />
+                <input
+                  type="file"
+                  name="file"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handleAvatarUpload}
+                />
+              </div>
+            </div>
+
+            {/* Profile Actions */}
+            {changePasswordToggle ? (
+              // Change Password Form
+              <form
+                onSubmit={handleChangePassword}
+                className="w-full space-y-4"
+              >
+                <div className="relative">
+                  <input
+                    type={showOldPassword ? "text" : "password"}
+                    placeholder="Old Password"
+                    className="w-full px-4 py-2 pl-10 border border-[#6c757d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                  />
+                  <IoIosLock className="absolute left-3 top-3 text-[#6c757d]" />
+                  <div
+                    className="absolute right-3 top-3 text-[#6c757d] cursor-pointer"
+                    onClick={() => setShowOldPassword(!showOldPassword)}
+                  >
+                    {showOldPassword ? <FaEyeSlash /> : <MdRemoveRedEye />}
                   </div>
-                </label>
-                <label htmlFor="password" className="flex flex-col">
-                  <span className="font-semibold">New Password</span>
-                  <div className="relative">
-                    <input
-                      type={showNewPassword ? "text" : "password"}
-                      placeholder="New Password"
-                      className="rounded pl-6 pr-3 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                      minLength={5}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                    />
-                    <div className="text-background text-xl absolute top-2 left-1">
-                      <IoIosLock />
-                    </div>
-                    <div
-                      className="text-background absolute top-1 right-1 text-2xl cursor-pointer"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                    >
-                      {showNewPassword ? <FaEyeSlash /> : <MdRemoveRedEye />}
-                    </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="New Password"
+                    className="w-full px-4 py-2 pl-10 border border-[#6c757d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  <IoIosLock className="absolute left-3 top-3 text-[#6c757d]" />
+                  <div
+                    className="absolute right-3 top-3 text-[#6c757d] cursor-pointer"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    {showNewPassword ? <FaEyeSlash /> : <MdRemoveRedEye />}
                   </div>
-                </label>
-                <label htmlFor="confirmPassword" className="flex flex-col">
-                  <span className="font-semibold">Confirm New Password</span>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      placeholder="New Confirm Password"
-                      className="rounded pl-6 pr-3 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                      minLength={5}
-                      value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
-                    />
-                    <div className="text-background text-xl absolute top-2 left-1">
-                      <IoIosLock />
-                    </div>
-                  </div>
-                </label>
+                </div>
+                <div className="relative">
+                  <input
+                    type="password"
+                    placeholder="Confirm New Password"
+                    className="w-full px-4 py-2 pl-10 border border-[#6c757d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  />
+                  <IoIosLock className="absolute left-3 top-3 text-[#6c757d]" />
+                </div>
                 <button
-                  className="w-full text-center bg-secondary rounded-lg font-semibold mt-3 py-1 uppercase"
                   type="submit"
+                  className="w-full bg-[#007BFF] text-white py-2 rounded-lg font-semibold hover:bg-[#0056b3] transition-colors"
                 >
                   Save Changes
                 </button>
                 <button
-                  className="w-full text-center bg-[#FF0000] rounded-lg font-semibold mt-2 py-1 uppercase"
+                  type="button"
                   onClick={() => setChangePasswordToggle(false)}
+                  className="w-full bg-[#FF0000] text-white py-2 rounded-lg font-semibold hover:bg-[#cc0000] transition-colors"
                 >
-                  cancel
+                  Cancel
                 </button>
               </form>
-            </div>
-          ) : updateProfileDetailToggle ? (
-            // view / edit - email , name
-            <div className="w-full">
-              <form onSubmit={handleProfileUpdate} className="w-full">
-                <label htmlFor="name" className="flex flex-col">
-                  <span className="font-semibold">Name</span>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      className="rounded pl-6 pr-3 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      ref={nameInputRef}
-                    />
-                    <div className="text-background absolute top-2 left-1">
-                      <FaUser className="text-xl" />
-                    </div>
-                  </div>
-                </label>
-                <label htmlFor="email" className="flex flex-col">
-                  <span className="font-semibold">Email</span>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      className="rounded pl-6 pr-3 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <div className="text-background absolute top-2 left-1">
-                      <MdEmail className="text-xl" />
-                    </div>
-                  </div>
-                </label>
-                <button
-                  className="w-full text-center bg-secondary rounded-lg font-semibold mt-3 py-1 uppercase"
-                  type="submit"
-                >
-                  Save Changes
-                </button>
-                <button
-                  className="w-full text-center bg-[#FF0000] rounded-lg font-semibold mt-2 py-1 uppercase"
-                  onClick={() => setUpdateProfileDetailToggle(false)}
-                >
-                  cancel
-                </button>
-              </form>
-            </div>
-          ) : (
-            <div className="w-full">
-              <label htmlFor="name" className="flex flex-col">
-                <span className="font-semibold">Name</span>
+            ) : updateProfileDetailToggle ? (
+              // Edit Profile Form
+              <form onSubmit={handleProfileUpdate} className="w-full space-y-4">
                 <div className="relative">
                   <input
                     type="text"
-                    className="rounded pl-6 pr-3 py-1 focus:outline-none text-box1 w-full border-2 border-background bg-transparent"
+                    placeholder="Name"
+                    className="w-full px-4 py-2 pl-10 border border-[#6c757d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    readOnly
+                    ref={nameInputRef}
                   />
-                  <div className="text-background absolute top-2 left-1">
-                    <FaUser className="text-xl" />
-                  </div>
+                  <FaUser className="absolute left-3 top-3 text-[#6c757d]" />
                 </div>
-              </label>
-              <label htmlFor="email" className="flex flex-col">
-                <span className="font-semibold">Email</span>
                 <div className="relative">
                   <input
                     type="email"
-                    className="rounded pl-6 pr-3 py-1 focus:outline-none text-box1 w-full border-2 border-background bg-transparent"
+                    placeholder="Email"
+                    className="w-full px-4 py-2 pl-10 border border-[#6c757d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF]"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <MdEmail className="absolute left-3 top-3 text-[#6c757d]" />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-[#007BFF] text-white py-2 rounded-lg font-semibold hover:bg-[#0056b3] transition-colors"
+                >
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUpdateProfileDetailToggle(false)}
+                  className="w-full bg-[#FF0000] text-white py-2 rounded-lg font-semibold hover:bg-[#cc0000] transition-colors"
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              // View Profile Details
+              <div className="w-full space-y-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    className="w-full px-4 py-2 pl-10 border border-[#6c757d] rounded-lg focus:outline-none bg-transparent"
+                    value={name}
                     readOnly
                   />
-                  <div className="text-background absolute top-2 left-1">
-                    <MdEmail className="text-xl" />
-                  </div>
+                  <FaUser className="absolute left-3 top-3 text-[#6c757d]" />
                 </div>
-              </label>
-              <button
-                className="w-full text-center bg-secondary rounded-lg font-semibold mt-3 py-1 uppercase"
-                onClick={() => setUpdateProfileDetailToggle(true)}
-              >
-                Edit Profile
-              </button>
-              <button
-                onClick={() => setChangePasswordToggle(true)}
-                className="w-full text-center bg-secondary rounded-lg font-semibold py-1 uppercase mt-2"
-              >
-                change password
-              </button>
-              <button className="w-full text-center bg-secondary rounded-lg font-semibold py-1 uppercase mt-2">
-                manage Subscription
-              </button>
-            </div>
-          )}
+                <div className="relative">
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    className="w-full px-4 py-2 pl-10 border border-[#6c757d] rounded-lg focus:outline-none bg-transparent"
+                    value={email}
+                    readOnly
+                  />
+                  <MdEmail className="absolute left-3 top-3 text-[#6c757d]" />
+                </div>
+                <button
+                  onClick={() => setUpdateProfileDetailToggle(true)}
+                  className="w-full bg-[#007BFF] text-white py-2 rounded-lg font-semibold hover:bg-[#0056b3] transition-colors"
+                >
+                  Edit Profile
+                </button>
+                <button
+                  onClick={() => setChangePasswordToggle(true)}
+                  className="w-full bg-[#007BFF] text-white py-2 rounded-lg font-semibold hover:bg-[#0056b3] transition-colors"
+                >
+                  Change Password
+                </button>
+                {admin ? (
+                  <Link
+                    to="/admin"
+                    className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors text-center block"
+                  >
+                    Admin Dashboard
+                  </Link>
+                ) : (
+                  <button className="w-full bg-[#007BFF] text-white py-2 rounded-lg font-semibold hover:bg-[#0056b3] transition-colors">
+                    Manage Subscription
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
-          {/* buttons */}
-        </div>
-        {/* playlist */}
-        <div className="w-full lg:w-2/3 h-56 bg-secondary overflow-x-auto">
-          {playlist?.length > 0 &&
-            playlist.map((item, i) => (
-              <Link
-                key={i}
-                to={`/courseInfo/${item.course}`}
-                className="container max-w-sm"
-              >
-                <img
-                  src={item.poster}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              </Link>
-            ))}
+          {/* Right Section - Playlist */}
+          <div className="w-full lg:w-2/3">
+            <h2 className="text-2xl font-bold text-[#007BFF] mb-4">Playlist</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {playlist?.length > 0 &&
+                playlist.map((item, i) => (
+                  <Link
+                    key={i}
+                    to={`/courseInfo/${item.course}`}
+                    className="block rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                  >
+                    <img
+                      src={item.poster}
+                      alt="Course Poster"
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="p-4 bg-white">
+                      <p className="text-lg font-semibold text-[#343a40]">
+                        {item.title}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

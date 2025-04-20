@@ -8,6 +8,18 @@ import { login } from "../redux/features/authSlice";
 import { useLoginMutation, useRegisterMutation } from "../redux/api/userApi";
 import { toast } from "react-toastify";
 
+// Theme constants
+const theme = {
+  colors: {
+    primary: "bg-indigo-600",
+    primaryDark: "bg-indigo-700",
+    primaryLight: "bg-indigo-100",
+    textPrimary: "text-indigo-600",
+    textMuted: "text-gray-500",
+    border: "border-gray-300",
+  },
+};
+
 const SignupSignin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -33,232 +45,300 @@ const SignupSignin = () => {
 
   useEffect(() => {
     if (userInfo) {
-      navigate("/home");
+      navigate("/");
     }
-  }, []);
+  }, [userInfo, navigate]);
 
-  // register handling
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    if (!name) return toast.error("Name is Required.");
-    if (!email) return toast.error("Email is Required.");
-    if (!password) return toast.error("Password is Required.");
-    if (!confirmPassword) return toast.error("Confirm Password is Required.");
-    if (password !== confirmPassword) toast.error("Password not Matched.");
+    if (!name) return toast.error("Name is required");
+    if (!email) return toast.error("Email is required");
+    if (!password) return toast.error("Password is required");
+    if (!confirmPassword) return toast.error("Please confirm your password");
+    if (password !== confirmPassword) return toast.error("Passwords don't match");
 
     try {
-      const data = {
-        name,
-        email,
-        password,
-      };
+      const data = { name, email, password };
       const res = await register(data).unwrap();
       dispatch(login(res.user));
-      toast.success(res.message);
-      navigate("/home");
+      toast.success("Registration successful!");
+      navigate("/");
     } catch (err) {
-      toast.error(err?.data?.message);
+      toast.error(err?.data?.message || "Registration failed");
     }
   };
 
-  if (registerLoading) {
-  }
-  if (registerError) {
-  }
-
-  // login handling
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!loginEmail) return toast.error("Email is Required.");
-    if (!loginPassword) return toast.error("Password is Required.");
+    if (!loginEmail) return toast.error("Email is required");
+    if (!loginPassword) return toast.error("Password is required");
+
     try {
-      const data = {
-        email: loginEmail,
-        password: loginPassword,
-      };
+      const data = { email: loginEmail, password: loginPassword };
       const res = await Login(data).unwrap();
       dispatch(login(res.user));
-      toast.success(res.message);
-      navigate("/home");
+      toast.success("Login successful!");
+      navigate("/");
     } catch (err) {
-      toast.error(err?.data?.message);
+      toast.error(err?.data?.message || "Login failed");
     }
   };
-  if (loginLoading) {
-  }
-  if (loginError) {
-  }
 
   return (
-    <div className="mt-[64px] min-h-[calc(100vh-64px)] w-screen bg-background flex items-center justify-center ">
-      <div className="w-full md:max-w-md p-4 bg-btn1 shadow-md sm:rounded-lg h-[calc(100vh-64px)] md:h-[33rem] overflow-hidden">
-        <h1 className="text-3xl font-bold mb-4 text-center overflow-hidden">
-          WELCOME TO ED MACHINE
-        </h1>
-        <div className="w-full overflow-hidden flex justify-between text-2xl relative px-4">
-          <div
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-indigo-600 mb-2">
+            Welcome to Ed Machine
+          </h1>
+          <p className="text-gray-500">
+            {signin ? "Sign in to your account" : "Create a new account"}
+          </p>
+        </div>
+
+        {/* Toggle between Login/Register */}
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
             onClick={() => setSignin(true)}
-            className={`w-1/2 text-center cursor-pointer py-2 uppercase tracking-wide font-semibold z-10 ${
-              signin ? " text-text" : ""
+            className={`flex-1 py-2 rounded-md font-medium transition-colors ${
+              signin
+                ? "bg-white text-indigo-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            Login
-          </div>
-          <div
+            Sign In
+          </button>
+          <button
             onClick={() => setSignin(false)}
-            className={`w-1/2 text-center cursor-pointer  py-2 uppercase tracking-wide font-semibold z-10 ${
-              signin ? "" : " text-text"
+            className={`flex-1 py-2 rounded-md font-medium transition-colors ${
+              !signin
+                ? "bg-white text-indigo-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
             }`}
           >
             Register
-          </div>
-          <div
-            className={`absolute top-0 left-0 w-1/2  h-12 bg-box3 transition-all ease-in z-0 ${
-              signin ? "translate-x-0" : "translate-x-full "
-            }`}
-          ></div>
+          </button>
         </div>
 
-        {/* Auth Forms */}
-        <div className="relative w-full h-full my-4 flex">
-          {/* Register Form */}
+        {/* Register Form */}
+        <form
+          className={`space-y-4 ${signin ? "hidden" : "block"}`}
+          onSubmit={handleRegister}
+        >
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Full Name
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaUser className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="John Doe"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+          </div>
 
-          <form
-            className={`flex flex-col gap-2 w-full h-full absolute top-0 left-0 transition-all ease-in  ${
-              signin ? "translate-x-full" : "translate-x-0"
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Email Address
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MdEmail className="text-gray-400" />
+              </div>
+              <input
+                type="email"
+                placeholder="email@example.com"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <IoIosLock className="text-gray-400" />
+              </div>
+              <input
+                type={showPasswordSignup ? "text" : "password"}
+                placeholder="••••••••"
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={6}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowPasswordSignup(!showPasswordSignup)}
+              >
+                {showPasswordSignup ? (
+                  <FaEyeSlash className="text-gray-400 hover:text-gray-500" />
+                ) : (
+                  <MdRemoveRedEye className="text-gray-400 hover:text-gray-500" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <IoIosLock className="text-gray-400" />
+              </div>
+              <input
+                type="password"
+                placeholder="••••••••"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                minLength={6}
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={registerLoading}
+            className={`w-full py-2 px-4 border border-transparent rounded-lg shadow-sm text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+              registerLoading
+                ? "bg-indigo-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
             }`}
-            onSubmit={handleRegister}
           >
-            <label htmlFor="name" className="flex flex-col">
-              <span className="font-semibold">Name</span>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-                <div className="text-background absolute top-[0.6rem] left-2">
-                  <FaUser />
-                </div>
-              </div>
-            </label>
-            <label htmlFor="email" className="flex flex-col">
-              <span className="font-semibold">Email</span>
-              <div className="relative">
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                <div className="text-background absolute top-[0.6rem] left-2">
-                  <MdEmail />
-                </div>
-              </div>
-            </label>
-            <label htmlFor="password" className="flex flex-col">
-              <span className="font-semibold">Password</span>
-              <div className="relative">
-                <input
-                  type={showPasswordSignup ? "text" : "password"}
-                  placeholder="Password"
-                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={5}
-                />
-                <div className="text-background text-xl absolute top-2 left-2">
-                  <IoIosLock className="text-xl" />
-                </div>
-                <div
-                  className="text-background absolute top-1 right-2 text-2xl cursor-pointer"
-                  onClick={() => setShowPasswordSignup(!showPasswordSignup)}
-                >
-                  {showPasswordSignup ? <FaEyeSlash /> : <MdRemoveRedEye />}
-                </div>
-              </div>
-            </label>
-            <label htmlFor="confirmPassword" className="flex flex-col">
-              <span className="font-semibold">Confirm Password</span>
-              <div className="relative">
-                <input
-                  type="password"
-                  placeholder="Confirm Password"
-                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  minLength={5}
-                />
-                <div className="text-background text-xl absolute top-2 left-2">
-                  <IoIosLock className="text-xl" />
-                </div>
-              </div>
-            </label>
-            <button
-              type="submit"
-              className="bg-secondary text-white w-[200px] m-auto rounded py-1 font-medium uppercase my-3"
-            >
-              Register
-            </button>
-          </form>
+            {registerLoading ? "Creating account..." : "Create Account"}
+          </button>
+        </form>
 
-          {/* Login Form */}
+        {/* Login Form */}
+        <form
+          className={`space-y-4 ${signin ? "block" : "hidden"}`}
+          onSubmit={handleLogin}
+        >
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Email Address
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MdEmail className="text-gray-400" />
+              </div>
+              <input
+                type="email"
+                placeholder="email@example.com"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+              />
+            </div>
+          </div>
 
-          <form
-            className={`flex flex-col gap-2 w-full h-full absolute top-0 left-0 transition-all ease-in ${
-              signin ? "translate-x-0" : "translate-x-full"
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <IoIosLock className="text-gray-400" />
+              </div>
+              <input
+                type={showPasswordLogin ? "text" : "password"}
+                placeholder="••••••••"
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                minLength={6}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowPasswordLogin(!showPasswordLogin)}
+              >
+                {showPasswordLogin ? (
+                  <FaEyeSlash className="text-gray-400 hover:text-gray-500" />
+                ) : (
+                  <MdRemoveRedEye className="text-gray-400 hover:text-gray-500" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                name="remember-me"
+                type="checkbox"
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="remember-me"
+                className="ml-2 block text-sm text-gray-700"
+              >
+                Remember me
+              </label>
+            </div>
+
+            <div className="text-sm">
+              <a
+                href="#"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Forgot password?
+              </a>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loginLoading}
+            className={`w-full py-2 px-4 border border-transparent rounded-lg shadow-sm text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+              loginLoading
+                ? "bg-indigo-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
             }`}
-            onSubmit={handleLogin}
           >
-            <label htmlFor="email" className="flex flex-col">
-              <span className="font-semibold">Email</span>
-              <div className="relative">
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                />
-                <div className="text-background absolute top-[0.6rem] left-2">
-                  <MdEmail />
-                </div>
-              </div>
-            </label>
-            <label htmlFor="password" className="flex flex-col">
-              <span className="font-semibold">Password</span>
-              <div className="relative">
-                <input
-                  type={showPasswordLogin ? "text" : "password"}
-                  placeholder="Password"
-                  className="rounded pl-6 pr-5 py-1 focus:outline-none text-box1 w-full border-2 border-background "
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  minLength={5}
-                />
-                <div className="text-background text-xl absolute top-2 left-2">
-                  <IoIosLock className="text-xl" />
-                </div>
-                <div
-                  className="text-background absolute top-1 right-2 text-2xl cursor-pointer"
-                  onClick={() => setShowPasswordLogin(!showPasswordLogin)}
-                >
-                  {showPasswordLogin ? <FaEyeSlash /> : <MdRemoveRedEye />}
-                </div>
-              </div>
-            </label>
-            <button
-              type="submit"
-              className="bg-secondary text-white w-[200px] m-auto rounded py-1 font-medium uppercase my-3"
-            >
-              Login
-            </button>
-          </form>
+            {loginLoading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+
+        <div className="text-center text-sm text-gray-500">
+          {signin ? (
+            <>
+              Don't have an account?{" "}
+              <button
+                onClick={() => setSignin(false)}
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Register
+              </button>
+            </>
+          ) : (
+            <>
+              Already have an account?{" "}
+              <button
+                onClick={() => setSignin(true)}
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Sign In
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

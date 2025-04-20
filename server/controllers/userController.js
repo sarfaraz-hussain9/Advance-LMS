@@ -107,9 +107,9 @@ export const changePassword = CAE(async (req, res, next) => {
   const isMatched = await bcrypt.compare(oldPassword, user.password);
 
   if (!isMatched)
-    return next(new ErrorHandler("old password is incorrexct", 401));
+    return next(new ErrorHandler("old password is incorrect", 401));
 
-  const salt = await bcrypt.genSalt();
+  const salt = await bcrypt.genSalt(12);
   const hashPassword = await bcrypt.hash(newPassword, salt);
 
   user.password = hashPassword;
@@ -304,19 +304,30 @@ export const updateUserRole = CAE(async (req, res, next) => {
 });
 
 export const deleteUser = CAE(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  try {
+    const user = await User.findById(req.params.id);
 
-  if (!user) {
-    return next(new ErrorHandler("user not found", 404));
+    if (!user) {
+      return next(new ErrorHandler("User not found", 404));
+    }
+
+    // Delete avatar from Cloudinary if exists
+    if (user.avatar?.public_id) {
+      try {
+        await cloudinary.v2.uploader.destroy(user.avatar.public_id);
+      } catch (cloudinaryError) {
+        console.error("Cloudinary deletion error:", cloudinaryError);
+      }
+    }
+
+    await user.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+      deletedUserId: user._id,
+    });
+  } catch (error) {
+    next(new ErrorHandler(error.message, 500));
   }
-
-  await cloudinary.v2.uploader.destroy(user.avatar.public_id);
-
-  //cancle subscription;
-
-  await user.remove;
-
-  res
-    .status(200)
-    .json({ success: true, message: "user is deleted successfully" });
 });

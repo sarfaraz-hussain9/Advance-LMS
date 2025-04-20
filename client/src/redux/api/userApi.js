@@ -117,7 +117,7 @@ const userApi = apiSlice.injectEndpoints({
     }),
 
     // change user role
-    updatUserRole: builder.mutation({
+    updateUserRole: builder.mutation({
       query: ({ data, userId }) => ({
         url: `${USER_URL}/admin/user/${userId}`,
         method: "PUT",
@@ -149,6 +149,6 @@ export const {
   useAddToPlaylistMutation,
   useRemoveFromPlaylistMutation,
   useGetAllUserQuery,
-  useUpdatUserRoleMutation,
+  useUpdateUserRoleMutation,
   useDeleteUserMutation,
 } = userApi;

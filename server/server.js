@@ -6,7 +6,6 @@ import cloudinary from "cloudinary";
 
 dotenv.config();
 
-
 cloudinary.v2.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
@@ -19,7 +18,7 @@ export const instance = new razorpay({
 });
 
 const PORT = process.env.PORT;
-const URL = process.env.MONGO_ATLAS_URL;
+const URL = process.env.MONGO_URL;
 
 DBconnect(URL)
   .then(() => {
