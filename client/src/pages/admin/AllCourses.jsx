@@ -8,15 +8,14 @@ import {
   useAddLectureMutation,
   useDeleteLectureMutation,
 } from "../../redux/api/courseApi";
-import { MdAdd, MdDelete, MdExpandMore, MdExpandLess } from "react-icons/md";
-import Modal from "../../components/Modal";
+import { MdAdd, MdDelete, MdEdit, MdClose } from "react-icons/md";
+import Modal from "../../components/Modal"; // Assuming you have a Modal component
 
 const AllCourses = () => {
-  // Modal and selection state
+  // State for modals and forms
   const [isCreateCourseModalOpen, setIsCreateCourseModalOpen] = useState(false);
   const [isAddLectureModalOpen, setIsAddLectureModalOpen] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
-  const [expandedCourses, setExpandedCourses] = useState({});
 
   // Form states
   const [courseForm, setCourseForm] = useState({
@@ -34,7 +33,13 @@ const AllCourses = () => {
   });
 
   // API hooks
-  const { data: coursesResponse, isLoading, refetch } = useGetCoursesQuery();
+  const {
+    data: coursesResponse,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetCoursesQuery();
 
   const [createCourse, { isLoading: isCreating }] = useCreateCourseMutation();
   const [addLecture, { isLoading: isAddingLecture }] = useAddLectureMutation();
@@ -49,39 +54,25 @@ const AllCourses = () => {
     }
   );
 
+  // Safely extract data
   const courses = coursesResponse?.course || [];
   const lectures = lecturesResponse?.lectures || [];
 
-  const toggleCourseExpansion = (courseId) => {
-    setExpandedCourses((prev) => ({
-      ...prev,
-      [courseId]: !prev[courseId],
-    }));
-    if (!expandedCourses[courseId]) {
-      setSelectedCourseId(courseId);
-    }
-  };
-
-  const handleCourseFormChange = (e) => {
-    const { name, value, files } = e.target;
-    setCourseForm((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
-  };
-
+  // Handlers
   const handleCreateCourse = async (e) => {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append("title", courseForm.title);
-    formData.append("description", courseForm.description);
-    formData.append("category", courseForm.category);
-    formData.append("createdBy", courseForm.createdBy);
-    formData.append("file", courseForm.file);
-
     try {
-      const res = await createCourse(formData).unwrap();
-      toast.success(res.message || "Course created successfully");
+      const formData = new FormData();
+      formData.append("title", courseForm.title);
+      formData.append("description", courseForm.description);
+      formData.append("category", courseForm.category);
+      formData.append("createdBy", courseForm.createdBy);
+      if (courseForm.file) {
+        formData.append("file", courseForm.file);
+      }
+
+      const data = await createCourse(formData).unwrap();
+      toast.success(`Course "${data.course.title}" created successfully!`);
       setIsCreateCourseModalOpen(false);
       setCourseForm({
         title: "",
@@ -96,156 +87,188 @@ const AllCourses = () => {
     }
   };
 
-  const handleDeleteCourse = async (courseId) => {
-    if (!window.confirm("Are you sure you want to delete this course?")) return;
-    try {
-      const res = await deleteCourse(courseId).unwrap();
-      toast.success(res.message || "Course deleted successfully");
-      refetch();
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete course");
-    }
-  };
-
   const handleAddLecture = async (e) => {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append("title", newLecture.title);
-    formData.append("description", newLecture.description);
-    formData.append("video", newLecture.video);
+    if (!selectedCourseId) return;
 
     try {
-      const res = await addLecture({
-        courseId: selectedCourseId,
-        formData,
+      const formData = new FormData();
+      formData.append("title", newLecture.title);
+      formData.append("description", newLecture.description);
+      if (newLecture.video) {
+        formData.append("video", newLecture.video);
+      }
+
+      const { data } = await addLecture({
+        id: selectedCourseId,
+        data: formData,
       }).unwrap();
-      toast.success(res.message || "Lecture added successfully");
+      toast.success(`Lecture "${data.lecture.title}" added successfully!`);
       setIsAddLectureModalOpen(false);
-      setNewLecture({ title: "", description: "", video: null });
-      refetch();
+      setNewLecture({
+        title: "",
+        description: "",
+        video: null,
+      });
     } catch (err) {
       toast.error(err?.data?.message || "Failed to add lecture");
     }
   };
 
-  const handleDeleteLecture = async (courseId, lectureId) => {
-    if (!window.confirm("Are you sure you want to delete this lecture?"))
-      return;
+  const handleDeleteCourse = async (courseId) => {
+    if (!courseId) return;
+
     try {
-      const res = await deleteLecture({ courseId, lectureId }).unwrap();
-      toast.success(res.message || "Lecture deleted");
+      // Show confirmation dialog
+      const confirmed = window.confirm(
+        "Are you sure you want to delete this course? This action cannot be undone."
+      );
+
+      if (!confirmed) return;
+
+      // Show loading state
+      toast.info("Deleting course...", { autoClose: false });
+
+      // Execute deletion
+      await deleteCourse(courseId).unwrap();
+
+      // Success feedback
+      toast.dismiss();
+      toast.success("Course deleted successfully!");
+
+      // Refresh course list
       refetch();
     } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete lecture");
+      // Error handling
+      toast.dismiss();
+      console.error("Delete course error:", err);
+
+      const errorMessage =
+        err?.data?.message || err?.error || "Failed to delete course";
+
+      toast.error(errorMessage);
     }
   };
+
+  const handleDeleteLecture = async (courseId, lectureId) => {
+    if (window.confirm("Are you sure you want to delete this lecture?")) {
+      try {
+        await deleteLecture({ courseId, lectureId }).unwrap();
+        toast.success("Lecture deleted successfully!");
+      } catch (err) {
+        toast.error(err?.data?.message || "Failed to delete lecture");
+      }
+    }
+  };
+
+  // Loading and error states
+  if (isLoading)
+    return <div className="text-center py-8">Loading courses...</div>;
+
+  if (isError) {
+    console.error("Error loading courses:", error);
+    return (
+      <div className="text-center py-8 text-red-500">
+        Error: {error?.data?.message || "Failed to load courses"}
+        <button
+          onClick={() => refetch()}
+          className="ml-2 text-blue-500 hover:text-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">All Courses</h2>
+        <h1 className="text-2xl font-bold">Course Management</h1>
         <button
           onClick={() => setIsCreateCourseModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700 transition"
+          disabled={isCreating}
         >
-          Create Course
+          <MdAdd /> Create Course
         </button>
       </div>
 
-      <div className="space-y-6">
+      {/* Courses List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.length > 0 ? (
           courses.map((course) => (
             <div
               key={course._id}
-              className="border rounded-lg overflow-hidden shadow-md"
+              className="border rounded-lg overflow-hidden shadow-md hover:shadow-lg transition"
             >
-              <div
-                className="p-4 bg-gray-50 flex justify-between items-center cursor-pointer"
-                onClick={() => toggleCourseExpansion(course._id)}
-              >
-                <div className="flex items-center space-x-4">
+              {/* Thumbnail with fallback */}
+              <div className="h-48 bg-gray-200 overflow-hidden flex items-center justify-center">
+                {course?.poster?.url ? (
                   <img
-                    src={
-                      course?.poster?.url || "https://via.placeholder.com/100"
-                    }
+                    src={course.poster.url}
                     alt={course.title}
-                    className="w-16 h-16 object-cover rounded"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "fallback-image-url.jpg";
+                    }}
                   />
-                  <div>
-                    <h3 className="font-bold text-lg">{course.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      {course.lectures?.length || 0} lectures •{" "}
-                      {course.category}
-                    </p>
+                ) : (
+                  <div className="text-gray-400 p-4 text-center">
+                    No thumbnail available
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedCourseId(course._id);
-                      setIsAddLectureModalOpen(true);
-                    }}
-                    className="text-blue-500 hover:text-blue-700 p-1"
-                    title="Add Lecture"
-                  >
-                    <MdAdd size={20} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteCourse(course._id);
-                    }}
-                    className="text-red-500 hover:text-red-700 p-1"
-                    title="Delete Course"
-                  >
-                    <MdDelete size={20} />
-                  </button>
-                  {expandedCourses[course._id] ? (
-                    <MdExpandLess size={20} className="text-gray-500" />
-                  ) : (
-                    <MdExpandMore size={20} className="text-gray-500" />
-                  )}
-                </div>
+                )}
               </div>
 
-              {expandedCourses[course._id] && (
-                <div className="border-t">
-                  {selectedCourseId === course._id && lectures.length > 0 ? (
-                    <div className="divide-y">
-                      {lectures.map((lecture) => (
-                        <div
-                          key={lecture._id}
-                          className="p-4 hover:bg-gray-50 flex justify-between items-center"
-                        >
-                          <div>
-                            <h4 className="font-medium">{lecture.title}</h4>
-                            <p className="text-sm text-gray-500">
-                              {lecture.description}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() =>
-                              handleDeleteLecture(course._id, lecture._id)
-                            }
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <MdDelete size={20} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 text-sm text-gray-500">
-                      No lectures found for this course.
-                    </div>
-                  )}
+              <div className="p-4">
+                <h3 className="font-bold text-lg mb-2">
+                  {course.title || "Untitled Course"}
+                </h3>
+                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                  {course.description || "No description provided"}
+                </p>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="text-sm text-gray-500 block">
+                      Category: {course.category || "N/A"}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Lectures: {course.lectures?.length || 0}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedCourseId(course._id);
+                        setIsAddLectureModalOpen(true);
+                      }}
+                      className="text-blue-500 hover:text-blue-700"
+                      title="Add Lecture"
+                    >
+                      <MdAdd size={20} />
+                    </button>
+                    <button
+                      onClick={() => setSelectedCourseId(course._id)}
+                      className="text-green-500 hover:text-green-700"
+                      title="View Lectures"
+                    ></button>
+                    <button
+                      onClick={() => handleDeleteCourse(course._id)}
+                      className="text-red-500 hover:text-red-700"
+                      title="Delete Course"
+                    >
+                      <MdDelete size={20} />
+                    </button>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           ))
         ) : (
-          <div className="text-center text-gray-500">No courses found.</div>
+          <div className="col-span-full text-center py-8 text-gray-500">
+            No courses found. Create your first course!
+          </div>
         )}
       </div>
 
@@ -255,107 +278,94 @@ const AllCourses = () => {
         onClose={() => setIsCreateCourseModalOpen(false)}
         title="Create New Course"
       >
-        <form onSubmit={handleCreateCourse} className="space-y-4">
-          <input
-            type="text"
-            name="title"
-            placeholder="Course Title"
-            required
-            value={courseForm.title}
-            onChange={handleCourseFormChange}
-            className="input-field"
-          />
-          <textarea
-            name="description"
-            placeholder="Course Description"
-            required
-            value={courseForm.description}
-            onChange={handleCourseFormChange}
-            className="input-field"
-          />
-          <input
-            type="text"
-            name="category"
-            placeholder="Category"
-            required
-            value={courseForm.category}
-            onChange={handleCourseFormChange}
-            className="input-field"
-          />
-          <input
-            type="text"
-            name="createdBy"
-            placeholder="Instructor"
-            required
-            value={courseForm.createdBy}
-            onChange={handleCourseFormChange}
-            className="input-field"
-          />
-          <input
-            type="file"
-            name="file"
-            accept="image/*"
-            required
-            onChange={handleCourseFormChange}
-            className="input-field"
-          />
-          <button
-            type="submit"
-            disabled={isCreating}
-            className="btn-primary w-full"
-          >
-            {isCreating ? "Creating..." : "Create Course"}
-          </button>
-        </form>
-      </Modal>
-
-      {/* Add Lecture Modal */}
-      <Modal
-        isOpen={isAddLectureModalOpen}
-        onClose={() => setIsAddLectureModalOpen(false)}
-        title="Add Lecture"
-      >
-        <form onSubmit={handleAddLecture} className="space-y-4">
-          <input
-            type="text"
-            name="title"
-            placeholder="Lecture Title"
-            required
-            value={newLecture.title}
-            onChange={(e) =>
-              setNewLecture((prev) => ({ ...prev, title: e.target.value }))
-            }
-            className="input-field"
-          />
-          <textarea
-            name="description"
-            placeholder="Lecture Description"
-            required
-            value={newLecture.description}
-            onChange={(e) =>
-              setNewLecture((prev) => ({
-                ...prev,
-                description: e.target.value,
-              }))
-            }
-            className="input-field"
-          />
-          <input
-            type="file"
-            accept="video/*"
-            required
-            onChange={(e) =>
-              setNewLecture((prev) => ({ ...prev, video: e.target.files[0] }))
-            }
-            className="input-field"
-          />
-          <button
-            type="submit"
-            disabled={isAddingLecture}
-            className="btn-primary w-full"
-          >
-            {isAddingLecture ? "Uploading..." : "Add Lecture"}
-          </button>
+        <form onSubmit={handleCreateCourse}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Title
+              </label>
+              <input
+                type="text"
+                value={courseForm.title}
+                onChange={(e) =>
+                  setCourseForm({ ...courseForm, title: e.target.value })
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <textarea
+                value={courseForm.description}
+                onChange={(e) =>
+                  setCourseForm({ ...courseForm, description: e.target.value })
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                rows={3}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Category
+              </label>
+              <input
+                type="text"
+                value={courseForm.category}
+                onChange={(e) =>
+                  setCourseForm({ ...courseForm, category: e.target.value })
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Instructor
+              </label>
+              <input
+                type="text"
+                value={courseForm.createdBy}
+                onChange={(e) =>
+                  setCourseForm({ ...courseForm, createdBy: e.target.value })
+                }
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                file
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setCourseForm({ ...courseForm, file: e.target.files[0] })
+                }
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setIsCreateCourseModalOpen(false)}
+                className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreating ? "Creating..." : "Create Course"}
+              </button>
+            </div>
+          </div>
         </form>
       </Modal>
     </div>

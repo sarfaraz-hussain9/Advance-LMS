@@ -344,7 +344,9 @@ const Profile = () => {
 
           {/* Right Section - Playlist */}
           <div className="w-full lg:w-2/3">
-            <h2 className="text-2xl font-bold text-[#007BFF] mb-4">Playlist</h2>
+            <h2 className="text-2xl font-bold text-[#007BFF] mb-4">
+              MY COURSES
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {playlist?.length > 0 &&
                 playlist.map((item, i) => (
