@@ -77,6 +77,6 @@ coverage/
 *.lcov
 
 # Frontend specific
-*.css
-*.scss
+
+
 
