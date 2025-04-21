@@ -49,10 +49,8 @@ const courseApi = apiSlice.injectEndpoints({
         url: `${COURSE_URL}/${id}`,
         method: "POST",
         body: data,
-        formData: true,
         credentials: "include",
       }),
-      invalidatesTags: ["Lecture"],
     }),
 
     // Delete course

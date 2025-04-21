@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { CAE } from "../middleware/catchAsyncError.js";
 import Course from "../models/courseModel.js";
 import getDataUri from "../utils/dataUri.js";
@@ -6,6 +7,7 @@ import cloudinary from "cloudinary";
 
 export const getAllCourses = CAE(async (req, res) => {
   const course = await Course.find().select("-lectures");
+
   res.status(200).json({ success: true, course });
 });
 
@@ -84,48 +86,158 @@ export const createCourse = CAE(async (req, res) => {
 export const getCourseLecture = CAE(async (req, res, next) => {
   const { id } = req.params;
 
-  const course = await Course.findById(id);
-  if (!course) return next(new ErrorHandler("course not found", 400));
+  // Validate ID format
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ErrorHandler("Invalid course ID format", 400));
+  }
 
-  course.views += 1;
+  // Get user ID if authenticated (for tracking viewed lectures)
+  const userId = req.user?._id;
 
-  await course.save();
+  const course = await Course.findByIdAndUpdate(
+    id,
+    { $inc: { views: 1 } },
+    {
+      new: true,
+      select:
+        "lectures title description numOfVideos price poster createdAt category",
+    }
+  ).populate({
+    path: "lectures",
+    select: "title duration videoUrl isPreview",
+    options: { sort: { lectureNumber: 1 } }, // Assuming you have lecture ordering
+  });
 
-  res.status(200).json({ success: true, lectures: course.lectures });
+  if (!course) {
+    return next(new ErrorHandler("Course not found", 404));
+  }
+
+  // Optional: Track user's course access (if authenticated)
+  if (userId) {
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { accessedCourses: id },
+    });
+  }
+
+  // Structure response data
+  const responseData = {
+    success: true,
+    metaData: {
+      title: course.title,
+      description: course.description,
+      category: course.category,
+      price: course.price,
+      poster: course.poster.url,
+      createdAt: course.createdAt,
+      numOfVideos: course.numOfVideos,
+    },
+    lectures: course.lectures,
+  };
+
+  res.status(200).json(responseData);
 });
 
 export const addLecture = CAE(async (req, res, next) => {
   const { id } = req.params;
 
-  const course = await Course.findById(id);
-  if (!course) return next(new ErrorHandler("course not found", 400));
+  // Validate course ID format
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return next(new ErrorHandler("Invalid course ID format", 400));
+  }
 
+  // Find course and validate existence
+  const course = await Course.findById(id);
+  if (!course) {
+    return next(new ErrorHandler("Course not found", 404));
+  }
+
+  // Validate required fields
   const { title, description } = req.body;
-  if (!title || !description)
-    return next(new ErrorHandler("please add all field", 400));
+  if (!title?.trim() || !description?.trim()) {
+    return next(new ErrorHandler("Title and description are required", 400));
+  }
+
+  // Validate file exists and is video
+  if (!req.file) {
+    return next(new ErrorHandler("Lecture video file is required", 400));
+  }
 
   const file = req.file;
 
-  const fileUri = getDataUri(file);
+  // Validate file type
+  if (!file.mimetype.startsWith("video/")) {
+    return next(new ErrorHandler("Only video files are allowed", 400));
+  }
 
-  const myCloud = await cloudinary.v2.uploader.upload(fileUri.content, {
-    resource_type: "video",
-  });
+  // Validate file size (100MB max)
+  if (file.size > 100 * 1024 * 1024) {
+    return next(new ErrorHandler("File size must be less than 100MB", 400));
+  }
 
-  // updload file here
-  course.lectures.push({
-    title,
-    description,
-    video: {
-      public_id: myCloud.public_id,
-      url: myCloud.url,
-    },
-  });
+  try {
+    // Convert file to data URI
+    const fileUri = getDataUri(file);
+    if (!fileUri?.content) {
+      throw new Error("Failed to process video file");
+    }
 
-  course.numOfVideos = course.lectures.length;
-  await course.save();
+    // Upload to Cloudinary with additional video processing options
+    const myCloud = await cloudinary.v2.uploader.upload(fileUri.content, {
+      folder: "lectures",
+      resource_type: "video",
+      chunk_size: 6000000, // 6MB chunks for better large file handling
+      eager: [
+        { width: 640, height: 360, crop: "scale" }, // Create optimized version
+      ],
+      eager_async: true,
+    });
 
-  res.status(200).json({ success: true, message: "lecture added in course" });
+    // Create lecture object
+    const newLecture = {
+      title: title.trim(),
+      description: description.trim(),
+      video: {
+        public_id: myCloud.public_id,
+        url: myCloud.secure_url,
+        duration: myCloud.duration, // Store video duration if available
+      },
+      createdAt: new Date(),
+    };
+
+    // Add to course and save
+    course.lectures.push(newLecture);
+    course.numOfVideos = course.lectures.length;
+    course.updatedAt = new Date();
+
+    await course.save();
+
+    // Successful response
+    res.status(201).json({
+      success: true,
+      message: "Lecture added successfully",
+      lecture: newLecture,
+      course: {
+        id: course._id,
+        title: course.title,
+        totalLectures: course.numOfVideos,
+      },
+    });
+  } catch (error) {
+    console.error("Lecture upload error:", error);
+
+    // Handle specific Cloudinary errors
+    if (error.message.includes("File size too large")) {
+      return next(
+        new ErrorHandler("Video file exceeds maximum size limit", 400)
+      );
+    }
+    if (error.message.includes("upload")) {
+      return next(new ErrorHandler("Failed to process video upload", 500));
+    }
+
+    // Generic error handler
+    return next(new ErrorHandler("Internal server error", 500));
+  }
 });
 
 export const deleteCourse = CAE(async (req, res, next) => {

@@ -26,14 +26,6 @@ router.post(
 
 router.post("/:id", isAuthenticated, authorizedAdmin, singleUpload, addLecture);
 
-router.post(
-  "/create-course",
-  isAuthenticated,
-  authorizedAdmin,
-  singleUpload,
-  createCourse
-);
-
 router.delete("/:id", isAuthenticated, authorizedAdmin, deleteCourse);
 
 router.delete("/lecture", isAuthenticated, authorizedAdmin, deleteLecture);

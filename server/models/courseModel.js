@@ -32,6 +32,7 @@ const courseSchema = new mongoose.Schema({
   createdBy: { type: String, required: true },
 
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 const Course = mongoose.model("Course", courseSchema);
